@@ -1,0 +1,105 @@
+{
+	"name": "df_silver_transactions",
+	"properties": {
+		"folder": {
+			"name": "DE_Project_1_DFs/Silver_Layer"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "Transactions"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "SinkTransactions"
+				}
+			],
+			"transformations": [
+				{
+					"name": "FilterTransactions"
+				},
+				{
+					"name": "RemoveDuplicate"
+				},
+				{
+					"name": "RenameColumns"
+				},
+				{
+					"name": "alterRow"
+				},
+				{
+					"name": "CastDataType"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          transaction_id as short,",
+				"          account_id as short,",
+				"          transaction_date as date,",
+				"          transaction_amount as double,",
+				"          transaction_type as string",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: true,",
+				"     format: 'delimited',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'bronze',",
+				"     fileName: 'transactions.csv',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true) ~> Transactions",
+				"Transactions filter(!isNull(transaction_id) || ",
+				"!isNull(account_id) || ",
+				"!isNull(transaction_type)) ~> FilterTransactions",
+				"FilterTransactions aggregate(groupBy(transaction_id),",
+				"     each(match(name!='transaction_id'), $$ = first($$))) ~> RemoveDuplicate",
+				"CastDataType select(mapColumn(",
+				"          TransactionID = transaction_id,",
+				"          AccountID = account_id,",
+				"          TransactionDate = transaction_date,",
+				"          TransactionAmount = transaction_amount,",
+				"          TransactionType = transaction_type",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumns",
+				"RenameColumns alterRow(upsertIf(1==1)) ~> alterRow",
+				"RemoveDuplicate cast(output(",
+				"          transaction_date as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss'",
+				"     ),",
+				"     errors: true) ~> CastDataType",
+				"alterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'silver/transactions/',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['TransactionID'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SinkTransactions"
+			]
+		}
+	}
+}

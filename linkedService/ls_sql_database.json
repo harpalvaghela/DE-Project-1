@@ -1,0 +1,24 @@
+{
+	"name": "ls_sql_database",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "sqlserverharpalvaghela.database.windows.net",
+			"database": "sqldbharpal",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "harpalsqladmin",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_key_vault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "azuresqldb-password"
+			}
+		}
+	}
+}

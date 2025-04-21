@@ -1,0 +1,102 @@
+{
+	"name": "df_silver_loanPayments",
+	"properties": {
+		"folder": {
+			"name": "DE_Project_1_DFs/Silver_Layer"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "LoanPayments"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "SinkLoanPayments"
+				}
+			],
+			"transformations": [
+				{
+					"name": "FilterLoanPayments"
+				},
+				{
+					"name": "RemoveDuplicate"
+				},
+				{
+					"name": "RenameColumns"
+				},
+				{
+					"name": "alterRow"
+				},
+				{
+					"name": "CastDataType"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          payment_id as short,",
+				"          loan_id as short,",
+				"          payment_date as date,",
+				"          payment_amount as short",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: true,",
+				"     format: 'delimited',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'bronze',",
+				"     fileName: 'loan_payments.csv',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true) ~> LoanPayments",
+				"LoanPayments filter(!isNull(payment_id) || ",
+				"!isNull(loan_id)) ~> FilterLoanPayments",
+				"FilterLoanPayments aggregate(groupBy(payment_id),",
+				"     each(match(name!='payment_id'), $$ = first($$))) ~> RemoveDuplicate",
+				"CastDataType select(mapColumn(",
+				"          PaymentID = payment_id,",
+				"          LoanID = loan_id,",
+				"          PaymentDate = payment_date,",
+				"          PaymentAmount = payment_amount",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumns",
+				"RenameColumns alterRow(upsertIf(1==1)) ~> alterRow",
+				"RemoveDuplicate cast(output(",
+				"          payment_date as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss'",
+				"     ),",
+				"     errors: true) ~> CastDataType",
+				"alterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'silver/loanpayments/',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['PaymentID'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SinkLoanPayments"
+			]
+		}
+	}
+}

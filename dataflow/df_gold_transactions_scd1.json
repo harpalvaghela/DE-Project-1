@@ -1,0 +1,185 @@
+{
+	"name": "df_gold_transactions_scd1",
+	"properties": {
+		"folder": {
+			"name": "DE_Project_1_DFs/Gold_Layer"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "transactions"
+				},
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "TransactionsTarget"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkTransaction"
+				},
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkTransactionsTable"
+				}
+			],
+			"transformations": [
+				{
+					"name": "RenameColumnsTransactions"
+				},
+				{
+					"name": "TransactionsHashKey"
+				},
+				{
+					"name": "lookup3"
+				},
+				{
+					"name": "splitTransactions"
+				},
+				{
+					"name": "InsertAuditColTransaction"
+				},
+				{
+					"name": "UpdateAuditColTransaction"
+				},
+				{
+					"name": "alterRow5"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          TransactionID as short,",
+				"          AccountID as short,",
+				"          TransactionDate as timestamp,",
+				"          TransactionAmount as double,",
+				"          TransactionType as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'silver/transactions') ~> transactions",
+				"source(output(",
+				"          TransactionID as integer,",
+				"          HashKey as long",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'query',",
+				"     store: 'sqlserver',",
+				"     query: 'SELECT TransactionID, HashKey FROM dbo.Transactions',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> TransactionsTarget",
+				"transactions select(mapColumn(",
+				"          each(match(1==1),",
+				"               concat('src_',$$) = $$)",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumnsTransactions",
+				"RenameColumnsTransactions derive(src_hashkey = crc32(concat(toString(src_TransactionID), toString(src_AccountID), toString(src_TransactionDate), toString(src_TransactionAmount), src_TransactionType))) ~> TransactionsHashKey",
+				"TransactionsHashKey, TransactionsTarget lookup(src_TransactionID == TransactionID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup3",
+				"lookup3 split(isNull(TransactionID),",
+				"     src_TransactionID == TransactionID && src_hashkey != HashKey,",
+				"     disjoint: false) ~> splitTransactions@(InsertTransaction, UpdateTransaction)",
+				"splitTransactions@InsertTransaction derive(src_createddate = currentTimestamp(),",
+				"          src_createdby = 'Harpal',",
+				"          src_updateddate = currentTimestamp(),",
+				"          src_updatedby = 'Harpal') ~> InsertAuditColTransaction",
+				"splitTransactions@UpdateTransaction derive(src_updatedBy = 'Harpal-Updated',",
+				"          src_updateDate = currentTimestamp()) ~> UpdateAuditColTransaction",
+				"UpdateAuditColTransaction alterRow(updateIf(1==1)) ~> alterRow5",
+				"InsertAuditColTransaction sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          TransactionID as integer,",
+				"          AccountID as integer,",
+				"          TransactionDate as timestamp,",
+				"          TransactionAmount as double,",
+				"          TransactionType as string,",
+				"          CreatedBy as string,",
+				"          CreatedDate as timestamp,",
+				"          UpdatedBy as string,",
+				"          UpdatedDate as timestamp,",
+				"          HashKey as long",
+				"     ),",
+				"     format: 'table',",
+				"     store: 'sqlserver',",
+				"     schemaName: 'dbo',",
+				"     tableName: 'Transactions',",
+				"     insertable: true,",
+				"     updateable: false,",
+				"     deletable: false,",
+				"     upsertable: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          TransactionID = src_TransactionID,",
+				"          AccountID = src_AccountID,",
+				"          TransactionDate = src_TransactionDate,",
+				"          TransactionAmount = src_TransactionAmount,",
+				"          TransactionType = src_TransactionType,",
+				"          CreatedBy = src_createdby,",
+				"          CreatedDate = src_createddate,",
+				"          UpdatedBy = src_updatedby,",
+				"          UpdatedDate = src_updateddate,",
+				"          HashKey = src_hashkey",
+				"     )) ~> sinkTransaction",
+				"alterRow5 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          TransactionID as integer,",
+				"          AccountID as integer,",
+				"          TransactionDate as timestamp,",
+				"          TransactionAmount as double,",
+				"          TransactionType as string,",
+				"          CreatedBy as string,",
+				"          CreatedDate as timestamp,",
+				"          UpdatedBy as string,",
+				"          UpdatedDate as timestamp,",
+				"          HashKey as long",
+				"     ),",
+				"     format: 'table',",
+				"     store: 'sqlserver',",
+				"     schemaName: 'dbo',",
+				"     tableName: 'Transactions',",
+				"     insertable: false,",
+				"     updateable: true,",
+				"     deletable: false,",
+				"     upsertable: false,",
+				"     keys:['TransactionID'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          TransactionID = src_TransactionID,",
+				"          AccountID = src_AccountID,",
+				"          TransactionDate = src_TransactionDate,",
+				"          TransactionAmount = src_TransactionAmount,",
+				"          TransactionType = src_TransactionType,",
+				"          UpdatedBy = src_updatedBy,",
+				"          UpdatedDate = src_updateDate,",
+				"          HashKey = src_hashkey",
+				"     )) ~> sinkTransactionsTable"
+			]
+		}
+	}
+}

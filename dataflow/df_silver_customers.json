@@ -1,0 +1,107 @@
+{
+	"name": "df_silver_customers",
+	"properties": {
+		"folder": {
+			"name": "DE_Project_1_DFs/Silver_Layer"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "Customers"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "SinkCustomers"
+				}
+			],
+			"transformations": [
+				{
+					"name": "FilterCustomers"
+				},
+				{
+					"name": "RemoveDuplicate"
+				},
+				{
+					"name": "RenameColumns"
+				},
+				{
+					"name": "alterRow"
+				},
+				{
+					"name": "HandleNulls"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          customer_id as short,",
+				"          first_name as string,",
+				"          last_name as string,",
+				"          address as string,",
+				"          city as string,",
+				"          state as string,",
+				"          zip as string",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: true,",
+				"     format: 'delimited',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'bronze',",
+				"     fileName: 'customers.csv',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true) ~> Customers",
+				"Customers filter(!isNull(customer_id) ||\r",
+				"!isNull(first_name)) ~> FilterCustomers",
+				"FilterCustomers aggregate(groupBy(customer_id),",
+				"     each(match(name!='customer_id'), $$ = first($$))) ~> RemoveDuplicate",
+				"HandleNulls select(mapColumn(",
+				"          CustomerID = customer_id,",
+				"          FullName,",
+				"          Address = address,",
+				"          City = city,",
+				"          State = state,",
+				"          PostalCode = zip",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumns",
+				"RenameColumns alterRow(upsertIf(1==1)) ~> alterRow",
+				"RemoveDuplicate derive(FullName = concat(first_name, ' ', last_name),",
+				"          zip = iifNull(zip, 'Unknown', zip),",
+				"          state = iifNull(state, 'Unknown', state),",
+				"          city = iifNull(city, 'Unknown', city)) ~> HandleNulls",
+				"alterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'silver/customers/',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['CustomerID'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SinkCustomers"
+			]
+		}
+	}
+}

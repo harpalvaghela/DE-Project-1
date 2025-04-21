@@ -1,0 +1,195 @@
+{
+	"name": "df_gold_customers_scd2",
+	"properties": {
+		"folder": {
+			"name": "DE_Project_1_DFs/Gold_Layer"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "customers"
+				},
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "CustomersTarget"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkCustomer"
+				},
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkCustomerTable"
+				}
+			],
+			"transformations": [
+				{
+					"name": "RenameColumnsCustomers"
+				},
+				{
+					"name": "CustomersHashKey"
+				},
+				{
+					"name": "lookup5"
+				},
+				{
+					"name": "splitCustomers"
+				},
+				{
+					"name": "unionCustomer"
+				},
+				{
+					"name": "InsertAuditColCustomer"
+				},
+				{
+					"name": "UpdateAuditColCustomer"
+				},
+				{
+					"name": "alterRow2"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as short,",
+				"          FullName as string,",
+				"          Address as string,",
+				"          City as string,",
+				"          State as string,",
+				"          PostalCode as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'silver/customers') ~> customers",
+				"source(output(",
+				"          CustomerID as integer,",
+				"          HashKey as long",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'query',",
+				"     store: 'sqlserver',",
+				"     query: 'SELECT CustomerID, HashKey FROM dbo.Customers where IsActive = 1',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> CustomersTarget",
+				"customers select(mapColumn(",
+				"          each(match(1==1),",
+				"               concat('src_',$$) = $$)",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumnsCustomers",
+				"RenameColumnsCustomers derive(src_hashkey = crc32(concat(toString(src_CustomerID),src_FullName,src_Address,src_City,src_State,src_PostalCode))) ~> CustomersHashKey",
+				"CustomersHashKey, CustomersTarget lookup(src_CustomerID == CustomerID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup5",
+				"lookup5 split(isNull(CustomerID),",
+				"     src_CustomerID ==CustomerID && src_hashkey != HashKey,",
+				"     disjoint: false) ~> splitCustomers@(InsertCustomer, UpdateCustomer)",
+				"splitCustomers@InsertCustomer, splitCustomers@UpdateCustomer union(byName: true)~> unionCustomer",
+				"unionCustomer derive(src_createddate = currentTimestamp(),",
+				"          src_createdby = 'Harpal',",
+				"          src_updateddate = currentTimestamp(),",
+				"          src_updatedby = 'Harpal',",
+				"          src_isActive = 1) ~> InsertAuditColCustomer",
+				"splitCustomers@UpdateCustomer derive(src_updatedBy = 'Harpal-Updated',",
+				"          src_updateDate = currentTimestamp(),",
+				"          src_IsActive = 0) ~> UpdateAuditColCustomer",
+				"UpdateAuditColCustomer alterRow(updateIf(1==1)) ~> alterRow2",
+				"InsertAuditColCustomer sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CustomerID as integer,",
+				"          FullName as string,",
+				"          Address as string,",
+				"          City as string,",
+				"          State as string,",
+				"          PostalCode as string,",
+				"          CreatedBy as string,",
+				"          CreatedDate as timestamp,",
+				"          UpdatedBy as string,",
+				"          UpdatedDate as timestamp,",
+				"          HashKey as long,",
+				"          IsActive as integer",
+				"     ),",
+				"     format: 'table',",
+				"     store: 'sqlserver',",
+				"     schemaName: 'dbo',",
+				"     tableName: 'Customers',",
+				"     insertable: true,",
+				"     updateable: false,",
+				"     deletable: false,",
+				"     upsertable: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CustomerID = src_CustomerID,",
+				"          FullName = src_FullName,",
+				"          Address = src_Address,",
+				"          City = src_City,",
+				"          State = src_State,",
+				"          PostalCode = src_PostalCode,",
+				"          CreatedBy = src_createdby,",
+				"          CreatedDate = src_createddate,",
+				"          UpdatedBy = src_updatedby,",
+				"          UpdatedDate = src_updateddate,",
+				"          HashKey = src_hashkey,",
+				"          IsActive = src_isActive",
+				"     )) ~> sinkCustomer",
+				"alterRow2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CustomerID as integer,",
+				"          FullName as string,",
+				"          Address as string,",
+				"          City as string,",
+				"          State as string,",
+				"          PostalCode as string,",
+				"          CreatedBy as string,",
+				"          CreatedDate as timestamp,",
+				"          UpdatedBy as string,",
+				"          UpdatedDate as timestamp,",
+				"          HashKey as long,",
+				"          IsActive as integer",
+				"     ),",
+				"     format: 'table',",
+				"     store: 'sqlserver',",
+				"     schemaName: 'dbo',",
+				"     tableName: 'Customers',",
+				"     insertable: false,",
+				"     updateable: true,",
+				"     deletable: false,",
+				"     upsertable: false,",
+				"     keys:['CustomerID','HashKey'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CustomerID,",
+				"          UpdatedBy = src_updatedBy,",
+				"          UpdatedDate = src_updateDate,",
+				"          HashKey,",
+				"          IsActive = src_IsActive",
+				"     )) ~> sinkCustomerTable"
+			]
+		}
+	}
+}

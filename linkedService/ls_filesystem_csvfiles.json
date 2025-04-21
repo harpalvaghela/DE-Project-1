@@ -1,0 +1,24 @@
+{
+	"name": "ls_filesystem_csvfiles",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "FileServer",
+		"typeProperties": {
+			"host": "D:\\DataEngineering\\BankDataset",
+			"userId": "harpa",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_key_vault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "onprem-outlookuser-password"
+			}
+		},
+		"connectVia": {
+			"referenceName": "selfHostedIR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

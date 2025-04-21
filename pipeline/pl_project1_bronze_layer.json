@@ -1,0 +1,298 @@
+{
+	"name": "pl_project1_bronze_layer",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@createArray('accounts.csv', 'customers.csv', 'loan_payments.csv', 'loans.csv', 'transactions.csv')",
+						"type": "Expression"
+					},
+					"batchCount": 5,
+					"activities": [
+						{
+							"name": "Get File Metadata",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "ds_filesystem_csvfiles",
+									"type": "DatasetReference",
+									"parameters": {
+										"fileName": {
+											"value": "@item()",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"lastModified"
+								],
+								"storeSettings": {
+									"type": "FileServerReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							}
+						},
+						{
+							"name": "Check for New Data",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "Get File Metadata",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@greaterOrEquals(activity('Get File Metadata').output.lastModified, addDays(utcNow(), -1))",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "Wait-False Condition",
+										"type": "Wait",
+										"dependsOn": [],
+										"userProperties": [],
+										"typeProperties": {
+											"waitTimeInSeconds": 1
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "On-Prem to Bronze Layer",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "DelimitedTextSource",
+												"storeSettings": {
+													"type": "FileServerReadSettings",
+													"recursive": false,
+													"enablePartitionDiscovery": false
+												},
+												"formatSettings": {
+													"type": "DelimitedTextReadSettings"
+												}
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".csv"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "ds_filesystem_csvfiles",
+												"type": "DatasetReference",
+												"parameters": {
+													"fileName": {
+														"value": "@item()",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "ds_adls_csvfiles",
+												"type": "DatasetReference",
+												"parameters": {
+													"FileName": {
+														"value": "@item()",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "Take Backup",
+										"type": "Copy",
+										"dependsOn": [
+											{
+												"activity": "On-Prem to Bronze Layer",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "DelimitedTextSource",
+												"storeSettings": {
+													"type": "AzureBlobFSReadSettings",
+													"recursive": true,
+													"enablePartitionDiscovery": false
+												},
+												"formatSettings": {
+													"type": "DelimitedTextReadSettings"
+												}
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "ds_adls_csvfiles",
+												"type": "DatasetReference",
+												"parameters": {
+													"FileName": {
+														"value": "@item()",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "ds_adls",
+												"type": "DatasetReference",
+												"parameters": {
+													"fileName": {
+														"value": "@item()",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "Append variable",
+										"type": "AppendVariable",
+										"dependsOn": [
+											{
+												"activity": "Take Backup",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"userProperties": [],
+										"typeProperties": {
+											"variableName": "ListofFileName",
+											"value": {
+												"value": "@item()",
+												"type": "Expression"
+											}
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Set variable for AppendValues",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ForEach",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "ReturnFileNameValues",
+							"value": {
+								"type": "Expression",
+								"content": "@variables('ListofFileName')"
+							}
+						}
+					],
+					"setSystemVariable": true
+				}
+			}
+		],
+		"variables": {
+			"ListofFileName": {
+				"type": "Array"
+			}
+		},
+		"folder": {
+			"name": "DE_Project_1/MainPipelines"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-04-21T00:22:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

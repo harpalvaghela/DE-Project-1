@@ -1,0 +1,187 @@
+{
+	"name": "df_gold_acounts_scd2",
+	"properties": {
+		"folder": {
+			"name": "DE_Project_1_DFs/Gold_Layer"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "accounts"
+				},
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "AccountsTarget"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkAccount"
+				},
+				{
+					"linkedService": {
+						"referenceName": "ls_sql_database",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkAccountTable"
+				}
+			],
+			"transformations": [
+				{
+					"name": "RenameColumnsAccounts"
+				},
+				{
+					"name": "AccountHashKey"
+				},
+				{
+					"name": "lookup4"
+				},
+				{
+					"name": "splitAccounts"
+				},
+				{
+					"name": "unionAccount"
+				},
+				{
+					"name": "InsertAuditColAccounts"
+				},
+				{
+					"name": "UpdateAuditColAccounts"
+				},
+				{
+					"name": "alterRow1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          AccountID as short,",
+				"          CustomerID as short,",
+				"          AccountType as string,",
+				"          AccountBalance as double",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'silver/accounts') ~> accounts",
+				"source(output(",
+				"          AccountID as integer,",
+				"          HashKey as long",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'query',",
+				"     store: 'sqlserver',",
+				"     query: 'SELECT AccountID, HashKey FROM dbo.Accounts where IsActive = 1',",
+				"     isolationLevel: 'READ_UNCOMMITTED') ~> AccountsTarget",
+				"accounts select(mapColumn(",
+				"          each(match(1==1),",
+				"               concat('src_',$$) = $$)",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumnsAccounts",
+				"RenameColumnsAccounts derive(src_hashkey = crc32(concat(toString(src_AccountID),toString(src_CustomerID),src_AccountType,toString(src_AccountBalance)))) ~> AccountHashKey",
+				"AccountHashKey, AccountsTarget lookup(src_AccountID == AccountID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup4",
+				"lookup4 split(isNull(AccountID),",
+				"     src_AccountID == AccountID && src_hashkey != HashKey,",
+				"     disjoint: false) ~> splitAccounts@(InsertAccount, UpdateAccount)",
+				"splitAccounts@InsertAccount, splitAccounts@UpdateAccount union(byName: true)~> unionAccount",
+				"unionAccount derive(src_createddate = currentTimestamp(),",
+				"          src_createdby = 'Harpal',",
+				"          src_updateddate = currentTimestamp(),",
+				"          src_updatedby = 'Harpal',",
+				"          src_isActive = 1) ~> InsertAuditColAccounts",
+				"splitAccounts@UpdateAccount derive(src_updatedBy = 'Harpal-Updated',",
+				"          src_UpdateDate = currentTimestamp(),",
+				"          src_IsActive = 0) ~> UpdateAuditColAccounts",
+				"UpdateAuditColAccounts alterRow(updateIf(1==1)) ~> alterRow1",
+				"InsertAuditColAccounts sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          AccountID as integer,",
+				"          CustomerID as integer,",
+				"          AccountType as string,",
+				"          AccountBalance as double,",
+				"          CreatedBy as string,",
+				"          CreatedDate as timestamp,",
+				"          UpdatedBy as string,",
+				"          UpdatedDate as timestamp,",
+				"          HashKey as long,",
+				"          IsActive as integer",
+				"     ),",
+				"     format: 'table',",
+				"     store: 'sqlserver',",
+				"     schemaName: 'dbo',",
+				"     tableName: 'Accounts',",
+				"     insertable: true,",
+				"     updateable: false,",
+				"     deletable: false,",
+				"     upsertable: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          AccountID = src_AccountID,",
+				"          CustomerID = src_CustomerID,",
+				"          AccountType = src_AccountType,",
+				"          AccountBalance = src_AccountBalance,",
+				"          HashKey = src_hashkey,",
+				"          CreatedDate = src_createddate,",
+				"          CreatedBy = src_createdby,",
+				"          UpdatedDate = src_updateddate,",
+				"          UpdatedBy = src_updatedby,",
+				"          IsActive = src_isActive",
+				"     )) ~> sinkAccount",
+				"alterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          AccountID as integer,",
+				"          CustomerID as integer,",
+				"          AccountType as string,",
+				"          AccountBalance as double,",
+				"          CreatedBy as string,",
+				"          CreatedDate as timestamp,",
+				"          UpdatedBy as string,",
+				"          UpdatedDate as timestamp,",
+				"          HashKey as long,",
+				"          IsActive as integer",
+				"     ),",
+				"     format: 'table',",
+				"     store: 'sqlserver',",
+				"     schemaName: 'dbo',",
+				"     tableName: 'Accounts',",
+				"     insertable: false,",
+				"     updateable: true,",
+				"     deletable: false,",
+				"     upsertable: false,",
+				"     keys:['AccountID','HashKey'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          AccountID,",
+				"          UpdatedBy = src_updatedBy,",
+				"          UpdatedDate = src_UpdateDate,",
+				"          HashKey,",
+				"          IsActive = src_IsActive",
+				"     )) ~> sinkAccountTable"
+			]
+		}
+	}
+}

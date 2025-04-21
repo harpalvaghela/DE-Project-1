@@ -1,0 +1,94 @@
+{
+	"name": "df_silver_accounts",
+	"properties": {
+		"folder": {
+			"name": "DE_Project_1_DFs/Silver_Layer"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "Accounts"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "SinkAccount"
+				}
+			],
+			"transformations": [
+				{
+					"name": "FilterAccounts"
+				},
+				{
+					"name": "RemoveDuplicate"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "alterRow1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          account_id as short,",
+				"          customer_id as short,",
+				"          account_type as string,",
+				"          balance as double",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: true,",
+				"     format: 'delimited',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'bronze',",
+				"     fileName: 'accounts.csv',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true) ~> Accounts",
+				"Accounts filter(!isNull(account_id) ||",
+				"!isNull(customer_id)) ~> FilterAccounts",
+				"FilterAccounts aggregate(groupBy(account_id),",
+				"     each(match(name!='account_id'), $$ = first($$))) ~> RemoveDuplicate",
+				"RemoveDuplicate select(mapColumn(",
+				"          AccountID = account_id,",
+				"          CustomerID = customer_id,",
+				"          AccountType = account_type,",
+				"          AccountBalance = balance",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 alterRow(upsertIf(1==1)) ~> alterRow1",
+				"alterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'silver/accounts',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: true,",
+				"     updateable: false,",
+				"     upsertable: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SinkAccount"
+			]
+		}
+	}
+}

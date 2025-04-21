@@ -1,0 +1,33 @@
+{
+	"name": "ds_adls",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_csvfiles",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"fileName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@concat(replace(dataset().fileName, '.csv', ''), '/', replace(dataset().fileName, '.csv', ''),'_',utcNow(),'.csv')",
+					"type": "Expression"
+				},
+				"folderPath": "clientbackupfiles",
+				"fileSystem": "project1"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

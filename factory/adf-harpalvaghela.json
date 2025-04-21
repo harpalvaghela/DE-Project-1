@@ -1,0 +1,9 @@
+{
+	"name": "adf-harpalvaghela",
+	"location": "canadacentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "4caae852-2c06-4210-b52a-4d1a8ae228fe",
+		"tenantId": "fcee7905-be7c-4a7c-b3f6-7c94700f97cb"
+	}
+}

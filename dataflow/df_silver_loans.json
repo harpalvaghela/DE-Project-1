@@ -1,0 +1,97 @@
+{
+	"name": "df_silver_loans",
+	"properties": {
+		"folder": {
+			"name": "DE_Project_1_DFs/Silver_Layer"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "Loans"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "ls_adls_csvfiles",
+						"type": "LinkedServiceReference"
+					},
+					"name": "SinkLoans"
+				}
+			],
+			"transformations": [
+				{
+					"name": "FilterLoans"
+				},
+				{
+					"name": "RemoveDuplicate"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "alterRow"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          loan_id as short,",
+				"          customer_id as short,",
+				"          loan_amount as double,",
+				"          interest_rate as double,",
+				"          loan_term as short",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: true,",
+				"     format: 'delimited',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'bronze',",
+				"     fileName: 'loans.csv',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true) ~> Loans",
+				"Loans filter(!isNull(loan_id) ||",
+				"!isNull(customer_id)) ~> FilterLoans",
+				"FilterLoans aggregate(groupBy(loan_id),",
+				"     each(match(name!='loan_id'), $$ = first($$))) ~> RemoveDuplicate",
+				"RemoveDuplicate select(mapColumn(",
+				"          LoanID = loan_id,",
+				"          CustomerID = customer_id,",
+				"          LoanAmount = loan_amount,",
+				"          InterestRate = interest_rate,",
+				"          LoanTerm = loan_term",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 alterRow(upsertIf(1==1)) ~> alterRow",
+				"alterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delta',",
+				"     fileSystem: 'project1',",
+				"     folderPath: 'silver/loans/',",
+				"     mergeSchema: false,",
+				"     autoCompact: false,",
+				"     optimizedWrite: false,",
+				"     vacuum: 0,",
+				"     deletable: false,",
+				"     insertable: false,",
+				"     updateable: false,",
+				"     upsertable: true,",
+				"     keys:['LoanID'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SinkLoans"
+			]
+		}
+	}
+}
