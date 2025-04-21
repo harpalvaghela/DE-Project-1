@@ -5,11 +5,18 @@
 			{
 				"name": "ForEach",
 				"type": "ForEach",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Get All Available Files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@createArray('accounts.csv', 'customers.csv', 'loan_payments.csv', 'loans.csv', 'transactions.csv')",
+						"value": "@activity('Get All Available Files').output.childItems\n",
 						"type": "Expression"
 					},
 					"batchCount": 5,
@@ -32,7 +39,7 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"fileName": {
-											"value": "@item()",
+											"value": "@item().name",
 											"type": "Expression"
 										}
 									}
@@ -130,7 +137,7 @@
 												"type": "DatasetReference",
 												"parameters": {
 													"fileName": {
-														"value": "@item()",
+														"value": "@item().name",
 														"type": "Expression"
 													}
 												}
@@ -142,7 +149,7 @@
 												"type": "DatasetReference",
 												"parameters": {
 													"FileName": {
-														"value": "@item()",
+														"value": "@item().name",
 														"type": "Expression"
 													}
 												}
@@ -207,7 +214,7 @@
 												"type": "DatasetReference",
 												"parameters": {
 													"FileName": {
-														"value": "@item()",
+														"value": "@item().name",
 														"type": "Expression"
 													}
 												}
@@ -219,7 +226,7 @@
 												"type": "DatasetReference",
 												"parameters": {
 													"fileName": {
-														"value": "@item()",
+														"value": "@item().name",
 														"type": "Expression"
 													}
 												}
@@ -241,7 +248,7 @@
 										"typeProperties": {
 											"variableName": "ListofFileName",
 											"value": {
-												"value": "@item()",
+												"value": "@item().name",
 												"type": "Expression"
 											}
 										}
@@ -280,6 +287,35 @@
 						}
 					],
 					"setSystemVariable": true
+				}
+			},
+			{
+				"name": "Get All Available Files",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_filesystem_metadata",
+						"type": "DatasetReference"
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "FileServerReadSettings",
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
 				}
 			}
 		],

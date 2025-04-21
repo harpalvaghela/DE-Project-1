@@ -1,0 +1,21 @@
+{
+	"name": "ds_filesystem_metadata",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_filesystem_csvfiles",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "FileServerLocation"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}
