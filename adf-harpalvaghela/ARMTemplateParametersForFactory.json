@@ -1,0 +1,33 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-harpalvaghela"
+		},
+		"ls_adls_csvfiles_accountKey": {
+			"value": ""
+		},
+		"ls_adls_csvfiles_properties_typeProperties_url": {
+			"value": "https://adlsharpalvaghela.dfs.core.windows.net/"
+		},
+		"ls_filesystem_csvfiles_properties_typeProperties_host": {
+			"value": "D:\\DataEngineering\\BankDataset"
+		},
+		"ls_filesystem_csvfiles_properties_typeProperties_userId": {
+			"value": "harpa"
+		},
+		"ls_key_vault_properties_typeProperties_baseUrl": {
+			"value": "https://keyvault-harpal-vaghela.vault.azure.net/"
+		},
+		"ls_sql_database_properties_typeProperties_server": {
+			"value": "sqlserverharpalvaghela.database.windows.net"
+		},
+		"ls_sql_database_properties_typeProperties_database": {
+			"value": "sqldbharpal"
+		},
+		"ls_sql_database_properties_typeProperties_userName": {
+			"value": "harpalsqladmin"
+		}
+	}
+}
