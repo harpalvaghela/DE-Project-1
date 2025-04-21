@@ -1,21 +1,21 @@
 ## Project 1 – Data Pipeline for Customer Account Analysis
-🎯 ### Objective
+🎯 Objective
 Build a robust Azure Data Factory (ADF) pipeline to process customer account data.
 
 Ingest data from backend storage ➔ transform and clean ➔ load into Azure SQL Database.
 
 Support downstream analytics and reporting needs with scalable and efficient processing.
 
-### Project Steps
+🎯 Project Steps
 
-➡️#### Step 1: Data Ingestion (Backend ➔ Raw/Bronze Layer)
+➡️ Step 1: Data Ingestion (Backend ➔ Raw/Bronze Layer)
 
 - Source: Backend team's storage account
 - accounts.csv, customers.csv, loan_payments.csv, loans.csv, transactions.csv
 - Sink: Azure Data Lake Storage (ADLS) Raw (Bronze) container
 - Reference Dataset: AI Bank Dataset on Kaggle
 
-➡️#### Step 2: Data Cleansing (Bronze ➔ Silver Layer)
+➡️ Step 2: Data Cleansing (Bronze ➔ Silver Layer)
 
 - Use ADF Dataflows:
 - Read data from Bronze layer.
@@ -23,7 +23,7 @@ Support downstream analytics and reporting needs with scalable and efficient pro
 - Apply necessary schema and data type transformations.
 - Output as Parquet/Delta files.
 
-➡️#### Step 3: Data Transformation (Silver ➔ Gold Layer)
+➡️ Step 3: Data Transformation (Silver ➔ Gold Layer)
 
 - Implement SCD Type 1 & Type 2 logic via Dataflows.
 - Load processed data into Azure SQL Database.
@@ -32,19 +32,19 @@ Pipelines:
 - Bronze ➔ Silver
 - Silver ➔ Gold
 
-➡️#### Step 4: Data Visualization (Power BI)
+➡️ Step 4: Data Visualization (Power BI)
 
 - Connect Power BI to SQL database tables.
 - Create dashboards and publish reports to Microsoft Fabric Workspace.
 
-➡️#### Key Features
+➡️ Key Features
 
 - Dynamic Parameters for flexible pipelines.
 - Secure Secrets Management with Azure Key Vault.
 - Scheduled Pipelines with Triggers.
 - Scalable and Modular Design.
 
-➡️#### Technologies Used
+➡️ Technologies Used
 
 - Azure Data Factory
 - Azure Data Lake Storage Gen2
