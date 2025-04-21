@@ -13,7 +13,7 @@ Support downstream analytics and reporting needs with scalable and efficient pro
 - Source: Backend team's storage account
 - accounts.csv, customers.csv, loan_payments.csv, loans.csv, transactions.csv
 - Sink: Azure Data Lake Storage (ADLS) Raw (Bronze) container
-- Reference Dataset: AI Bank Dataset on Kaggle
+- Reference Dataset: AI Bank Dataset on Kaggle (https://www.kaggle.com/datasets/varunkumari/ai-bank-dataset)
 
 ➡️ Step 2: Data Cleansing (Bronze ➔ Silver Layer)
 
