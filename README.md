@@ -27,7 +27,9 @@ Support downstream analytics and reporting needs with scalable and efficient pro
 
 - Implement SCD Type 1 & Type 2 logic via Dataflows.
 - Load processed data into Azure SQL Database.
-Pipelines:
+
+➡️ Pipelines:
+
 - Local ➔ Bronze
 - Bronze ➔ Silver
 - Silver ➔ Gold
