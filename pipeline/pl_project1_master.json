@@ -229,9 +229,6 @@
 			}
 		],
 		"variables": {
-			"CheckNewFile": {
-				"type": "Boolean"
-			},
 			"ReturnAllFileName": {
 				"type": "Array"
 			}
