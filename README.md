@@ -1,5 +1,5 @@
 ## Project 1 – Data Pipeline for Customer Account Analysis
-🎯### Objective
+🎯 ### Objective
 Build a robust Azure Data Factory (ADF) pipeline to process customer account data.
 
 Ingest data from backend storage ➔ transform and clean ➔ load into Azure SQL Database.
