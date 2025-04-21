@@ -10,7 +10,7 @@ Support downstream analytics and reporting needs with scalable and efficient pro
 
 ➡️ Step 1: Data Ingestion (Backend ➔ Raw/Bronze Layer)
 
-- Source: Backend team's storage account
+- Source: Local File System
 - accounts.csv, customers.csv, loan_payments.csv, loans.csv, transactions.csv
 - Sink: Azure Data Lake Storage (ADLS) Raw (Bronze) container
 - Reference Dataset: AI Bank Dataset on Kaggle (https://www.kaggle.com/datasets/varunkumari/ai-bank-dataset)
