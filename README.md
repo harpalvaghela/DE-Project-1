@@ -5,6 +5,7 @@ Build a robust Azure Data Factory (ADF) pipeline to process customer account dat
 Ingest data from backend storage ➔ transform and clean ➔ load into Azure SQL Database.
 
 Support downstream analytics and reporting needs with scalable and efficient processing.
+
 ---
 ### ETL Workflow
 ![ETLWorkflow](./ETLWorkflow.png)
