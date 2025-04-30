@@ -5,7 +5,11 @@ Build a robust Azure Data Factory (ADF) pipeline to process customer account dat
 Ingest data from backend storage ➔ transform and clean ➔ load into Azure SQL Database.
 
 Support downstream analytics and reporting needs with scalable and efficient processing.
+---
+### ETL Workflow
+![ETLWorkflow](./ETLWorkflow.png)
 
+---
 🎯 Project Steps
 
 ➡️ Step 1: Data Ingestion (Backend ➔ Raw/Bronze Layer)
@@ -39,12 +43,20 @@ Support downstream analytics and reporting needs with scalable and efficient pro
 - Connect Power BI to SQL database tables.
 - Create dashboards and publish reports to Microsoft Fabric Workspace.
 
+---
+### Dashboard
+![Dashboard](./Dashboard.png)
+
+---
+
 ➡️ Key Features
 
 - Dynamic Parameters for flexible pipelines.
 - Secure Secrets Management with Azure Key Vault.
 - Scheduled Pipelines with Triggers.
 - Scalable and Modular Design.
+
+---
 
 ➡️ Technologies Used
 
@@ -58,6 +70,8 @@ Support downstream analytics and reporting needs with scalable and efficient pro
 Connect with me on my profile below for more updates:
  
 LinkedIn: https://www.linkedin.com/in/harpalvaghela/
+
+Website: https://www.harpalvaghela.com
 
 Medium Blog: https://medium.com/@harpalvaghela
 
